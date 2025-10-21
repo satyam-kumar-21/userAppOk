@@ -9,13 +9,25 @@ const Profile = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ fontSize: 18 }}>No user logged in</Text>
-      </View>
-    );
-  }
+if (!user) {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.warningTitle}>Oops!</Text>
+      <Text style={styles.warningText}>
+        You are not logged in. Please login to access your profile.
+      </Text>
+
+      <TouchableOpacity
+        style={styles.loginButton}
+        onPress={() => router.push("/login")}
+      >
+        <Text style={styles.loginButtonText}>Go to Login</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+
 
   const handleLogout = () => {
     dispatch(logout());
@@ -66,5 +78,35 @@ const styles = StyleSheet.create({
   editButton: { backgroundColor: "#4BB543" }, // Green color for Edit Profile
   logoutButton: { backgroundColor: "#ff5c5c" }, // Red for logout
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  warningTitle: {
+  fontSize: 32,
+  fontWeight: "700",
+  color: "#ff5c5c",
+  marginBottom: 10,
+},
+warningText: {
+  fontSize: 16,
+  color: "#555",
+  textAlign: "center",
+  marginBottom: 20,
+  paddingHorizontal: 20,
+},
+loginButton: {
+  backgroundColor: "#ff914d",
+  paddingVertical: 14,
+  paddingHorizontal: 30,
+  borderRadius: 12,
+  shadowColor: "#000",
+  shadowOpacity: 0.2,
+  shadowRadius: 5,
+  elevation: 3,
+},
+loginButtonText: {
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "700",
+  textAlign: "center",
+},
+
 });
 

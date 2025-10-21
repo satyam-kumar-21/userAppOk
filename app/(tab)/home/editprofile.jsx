@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, Easing } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
+import { updateUser } from "../../../redux/slices/userSlice"; // import the update action
 
 const EditProfile = () => {
   const { user } = useSelector((state) => state.user);
@@ -50,24 +51,28 @@ const EditProfile = () => {
       return;
     }
 
-    // Call your API here to update profile
-    showSuccess("Profile updated successfully!");
-    setTimeout(() => router.push("/profile"), 1600); // navigate after popup
+    // Dispatch Redux update action
+    dispatch(updateUser({ name, mobile }))
+      .then((res) => {
+        if (res.payload && res.payload._id) {
+          showSuccess("Profile updated successfully!");
+          setTimeout(() => router.push("/profile"), 1600);
+        } else {
+          Alert.alert("Error", "Failed to update profile!");
+        }
+      })
+      .catch(() => {
+        Alert.alert("Error", "Failed to update profile!");
+      });
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-   
-
       <Text style={styles.title}>Edit Profile</Text>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Change Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-        />
+        <TextInput style={styles.input} value={name} onChangeText={setName} />
       </View>
 
       <View style={styles.inputGroup}>
@@ -85,14 +90,10 @@ const EditProfile = () => {
         <Text style={styles.buttonText}>Save Changes</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, styles.backButton]}
-        onPress={() => router.push("/profile")}
-      >
+      <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/profile")}>
         <Text style={styles.buttonText}>Back to Profile</Text>
       </TouchableOpacity>
 
-      {/* Success popup */}
       {successMsg ? (
         <Animated.View style={[styles.successOverlay, { opacity: fadeAnim }]}>
           <Text style={styles.successText}>{successMsg}</Text>
@@ -111,15 +112,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     justifyContent: "center",
-  },
-  backButton: {
-    alignSelf: "flex-start",
-    marginBottom: 20,
-  },
-  backText: {
-    fontSize: 16,
-    color: "#ff914d",
-    fontWeight: "600",
   },
   title: {
     fontSize: 28,
@@ -155,7 +147,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   saveButton: {
-    backgroundColor: "#4BB543", // green
+    backgroundColor: "#4BB543",
+  },
+  backButton: {
+    backgroundColor: "#ff914d",
   },
   buttonText: {
     color: "#fff",
@@ -180,9 +175,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
-  backButton: {
-  backgroundColor: "#ff914d", // different color from save
-  marginTop: 10,
-},
-
 });

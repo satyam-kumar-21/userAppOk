@@ -10,8 +10,6 @@ export const signin = createAsyncThunk(
     async({ mobile, password }, { rejectWithValue }) => {
         try {
             const res = await axios.post(`${API_URL}/login`, { mobile, password });
-
-            // Check if backend actually returns _id and token
             if (res.data && res.data._id && res.data.token) {
                 return res.data;
             } else {
@@ -33,7 +31,6 @@ export const signup = createAsyncThunk(
     async({ name, mobile, password }, { rejectWithValue }) => {
         try {
             const res = await axios.post(`${API_URL}/register`, { name, mobile, password });
-
             if (res.data && res.data._id && res.data.token) {
                 return res.data;
             } else {
@@ -44,6 +41,32 @@ export const signup = createAsyncThunk(
                 return rejectWithValue({ message: err.response.data.message });
             } else {
                 return rejectWithValue({ message: "Signup failed" });
+            }
+        }
+    }
+);
+
+// UPDATE USER
+export const updateUser = createAsyncThunk(
+    "user/update",
+    async({ name, mobile }, { getState, rejectWithValue }) => {
+        try {
+            const state = getState();
+            const token = state.user.token;
+            const res = await axios.put(
+                `${API_URL}/update`, { name, mobile }, { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data && res.data._id) {
+                return res.data;
+            } else {
+                return rejectWithValue({ message: "Update succeeded but user data is missing!" });
+            }
+        } catch (err) {
+            if (err.response && err.response.data && err.response.data.message) {
+                return rejectWithValue({ message: err.response.data.message });
+            } else {
+                return rejectWithValue({ message: "Update failed" });
             }
         }
     }
@@ -126,6 +149,34 @@ const userSlice = createSlice({
                     state.error = action.payload.message;
                 } else {
                     state.error = "Signup failed";
+                }
+            });
+
+        // UPDATE USER
+        builder
+            .addCase(updateUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateUser.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload && action.payload._id) {
+                    state.user = {
+                        _id: action.payload._id,
+                        name: action.payload.name,
+                        mobile: action.payload.mobile,
+                    };
+                    state.error = null;
+                } else {
+                    state.error = "Update succeeded but user data is missing!";
+                }
+            })
+            .addCase(updateUser.rejected, (state, action) => {
+                state.loading = false;
+                if (action.payload && action.payload.message) {
+                    state.error = action.payload.message;
+                } else {
+                    state.error = "Update failed";
                 }
             });
     },
