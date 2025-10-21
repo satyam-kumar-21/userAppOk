@@ -13,7 +13,7 @@ const Index = () => {
             {/* Direct Home Button */}
             <Link href="/(tab)/home" asChild>
                 <TouchableOpacity style={styles.homeButton} activeOpacity={0.8}>
-                    <Text style={styles.buttonText}>Direct Home</Text>
+                    <Text style={styles.buttonText}>Continue as Gues</Text>
                 </TouchableOpacity>
             </Link>
 
