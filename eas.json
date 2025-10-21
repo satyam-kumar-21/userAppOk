@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 16.24.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"  // default Play Store .aab
+      },
+      "autoIncrement": true
+    },
+    "production-apk": {
+      "android": {
+        "buildType": "apk"  // generate .apk instead of .aab
+      },
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

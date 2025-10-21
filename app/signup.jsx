@@ -1,5 +1,5 @@
-import { Link } from "expo-router";
-import React, { useState } from "react";
+import { Link, useRouter } from "expo-router";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -9,31 +9,87 @@ import {
   ImageBackground,
   Image,
   ScrollView,
+  ActivityIndicator,
+  Animated,
+  Easing,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { signup } from "../redux/slices/userSlice";
 
 const Signup = () => {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const handleSignup = () => {
-    if (!name || !email || !mobile || !password || !confirmPassword) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { loading, error } = useSelector((state) => state.user);
+
+  const showSuccess = (message) => {
+    setSuccessMsg(message);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+      easing: Easing.out(Easing.ease),
+    }).start();
+
+    setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }).start(() => setSuccessMsg(""));
+    }, 1500); // message stays for 1.5s
+  };
+
+  const handleSignup = async () => {
+    if (!name || !mobile || !password || !confirmPassword) {
       alert("Please fill all fields!");
       return;
     }
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
+
     if (mobile.length < 10) {
       alert("Please enter a valid 10-digit mobile number!");
       return;
     }
 
-    alert(`Welcome aboard, ${name}! 🍕`);
-    // Add your API call or navigation here
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+
+    try {
+      const resultAction = await dispatch(signup({ name, mobile, password }));
+
+      if (signup.fulfilled.match(resultAction)) {
+        // Show animated success message
+        showSuccess(`Registered Successfully! Welcome ${name} 🎉`);
+
+        setName("");
+        setMobile("");
+        setPassword("");
+        setConfirmPassword("");
+
+        // Redirect after 1.5s
+        setTimeout(() => router.push("/login"), 1500);
+      } else {
+        if (resultAction.payload && resultAction.payload.message) {
+          alert("Failed: " + resultAction.payload.message);
+        } else if (resultAction.error && resultAction.error.message) {
+          alert("Failed: " + resultAction.error.message);
+        } else {
+          alert("Signup failed");
+        }
+      }
+    } catch (err) {
+      alert("Signup failed: " + err.message);
+    }
   };
 
   return (
@@ -51,7 +107,6 @@ const Signup = () => {
           }}
           style={styles.logo}
         />
-
         <Text style={styles.title}>Join Foodie Express</Text>
         <Text style={styles.subtitle}>Get your favorite meals delivered fast 🍔</Text>
 
@@ -66,23 +121,10 @@ const Signup = () => {
 
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#aaa"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-
-          <TextInput
-            style={styles.input}
             placeholder="Mobile Number"
             placeholderTextColor="#aaa"
             value={mobile}
-            onChangeText={(text) => {
-              // Allow only numbers
-              const numeric = text.replace(/[^0-9]/g, "");
-              setMobile(numeric);
-            }}
+            onChangeText={(text) => setMobile(text.replace(/[^0-9]/g, ""))}
             keyboardType="numeric"
             maxLength={10}
           />
@@ -105,9 +147,15 @@ const Signup = () => {
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleSignup}>
-            <Text style={styles.buttonText}>Sign Up</Text>
+          <TouchableOpacity style={styles.button} onPress={handleSignup} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Sign Up</Text>
+            )}
           </TouchableOpacity>
+
+          {error && <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>}
 
           <Text style={styles.footer}>
             Already have an account?{" "}
@@ -116,6 +164,13 @@ const Signup = () => {
             </Link>
           </Text>
         </View>
+
+        {/* Animated success message */}
+        {successMsg ? (
+          <Animated.View style={[styles.successOverlay, { opacity: fadeAnim }]}>
+            <Text style={styles.successText}>{successMsg}</Text>
+          </Animated.View>
+        ) : null}
       </ScrollView>
     </ImageBackground>
   );
@@ -124,10 +179,7 @@ const Signup = () => {
 export default Signup;
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    resizeMode: "cover",
-  },
+  background: { flex: 1, resizeMode: "cover" },
   overlay: {
     flexGrow: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -136,22 +188,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     paddingVertical: 40,
   },
-  logo: {
-    width: 90,
-    height: 90,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#fff",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#f1f1f1",
-    marginBottom: 25,
-    textAlign: "center",
-  },
+  logo: { width: 90, height: 90, marginBottom: 10 },
+  title: { fontSize: 28, fontWeight: "800", color: "#fff" },
+  subtitle: { fontSize: 15, color: "#f1f1f1", marginBottom: 25, textAlign: "center" },
   formContainer: {
     width: "100%",
     backgroundColor: "rgba(255,255,255,0.15)",
@@ -179,18 +218,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  buttonText: {
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  footer: { marginTop: 15, textAlign: "center", color: "#eee" },
+  link: { color: "#ff914d", fontWeight: "600" },
+  successOverlay: {
+    position: "absolute",
+    top: 50,
+    backgroundColor: "#4BB543", // green
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  successText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
-  },
-  footer: {
-    marginTop: 15,
     textAlign: "center",
-    color: "#eee",
-  },
-  link: {
-    color: "#ff914d",
-    fontWeight: "600",
   },
 });
