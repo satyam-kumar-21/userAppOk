@@ -6,6 +6,7 @@ import Categories from "../../../components/home/categories";
 import Slider from "../../../components/home/slider";
 import HotDeals from "../../../components/home/hotDeals";
 import DealOfTheDay from "../../../components/home/dealsOfTheDay";
+import CurrentLocation from "../../../components/home/currentLocation";
 
 const Home = () => {
   return (
@@ -15,6 +16,7 @@ const Home = () => {
 
       {/* Scrollable content below header */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <CurrentLocation />
         <SearchBox />
         <Categories />
         <Slider />
